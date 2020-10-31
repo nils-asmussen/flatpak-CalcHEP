@@ -1,0 +1,44 @@
+app-id: ru.msu.sinp.theory.CalcHEP
+runtime: org.freedesktop.Sdk
+runtime-version: '20.08'
+sdk: org.freedesktop.Sdk
+command: /app/bin/wrapper
+finish-args:
+   - --filesystem=host
+   - --socket=x11
+modules:
+   - name: CalcHEP
+     buildsystem: simple
+     build-commands:
+        - cp calchep_3.8.7.tgz /app/calchep.tgz
+        - cd /app; tar xzf calchep.tgz
+        - cd /app; rm calchep.tgz
+        - rm /app/calchep_3.8.7/work/bin
+        - cd /app/calchep_3.8.7; make
+     sources:
+        - type: file
+          path: calchep_3.8.7.tgz
+          url: https://theory.sinp.msu.ru/~pukhov/CALCHEP/calchep_3.8.7.tgz
+          sha256: acfd9f1c9198d014fedfdf552ef05a822d3083ba43eb0b24b0aba9a1ce7a13b0
+   - name: wrapper
+     buildsystem: simple
+     build-commands:
+        - mkdir /app/bin
+        - |
+           cat << EOF > /app/bin/wrapper
+           #!/bin/bash
+           if [ \$# -ge 1 ]; then
+              if [ "x\${1::2}" == "x./" ]; then
+                 "\$@"
+              elif [ "x\$1" == "xmkWORKdir" ]; then
+                 /app/calchep_3.8.7/"\$@"
+              else
+                 /app/calchep_3.8.7/bin/"\$@"
+              fi
+           else
+              echo Commands:
+              echo mkWORKdir
+              ls /app/calchep_3.8.7/bin/
+           fi
+           EOF
+        - chmod 0755 /app/bin/wrapper
